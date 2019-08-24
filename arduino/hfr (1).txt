@@ -1,0 +1,98 @@
+#include <Servo.h>
+int pot1=A1;
+int pot2=A2;
+int pot3=A3;
+int pot4=A4;
+int value1=0;
+int value2=0;
+int value3=0;
+int value4=0;
+Servo mot1;
+Servo mot2;
+Servo mot3;
+Servo mot4;
+int s1[150];
+int s2[150];
+int s3[150];
+int s4[150];
+int switch_pin=4;
+float angle1=0;
+float angle2=0;
+float angle3=0;
+float angle4=0;
+int i=0;
+int j=0;
+int k;
+void setup()
+{
+  Serial.begin(9600);
+  pinMode(pot1, INPUT);
+  pinMode(pot2, INPUT);
+  pinMode(pot3, INPUT);
+  pinMode(pot4, INPUT);
+  pinMode(switch_pin, INPUT);
+  pinMode(9, OUTPUT);
+  pinMode(10,OUTPUT);
+  pinMode(11,OUTPUT);
+  pinMode(6, OUTPUT);
+  mot1.attach(9);
+  mot2.attach(10);
+  mot3.attach(11);
+  mot4.attach(6);
+  Serial.println("begin");
+}
+
+void loop()
+{
+  Serial.println("free");
+  if(digitalRead(switch_pin)==HIGH)
+ {
+    Record_sequence();
+  }
+  else
+  {
+    Execute_sequence();
+  }
+}
+
+void Record_sequence()
+{
+  Serial.println("recording");
+  
+  i=0;
+  while(digitalRead(switch_pin))
+ { value1=analogRead(pot1);
+  value2=analogRead(pot2);
+  value3=analogRead(pot3);
+  value4=analogRead(pot4);
+  angle1=(int)(value1/1023)*180;
+  angle2=(int)(value2/1023)*180;
+  angle3=(int)(value3/1023)*180;
+  angle4=(int)(value4/1023)*180;
+Serial.println(angle1);
+Serial.println(angle2);
+Serial.println(angle3);
+Serial.println(angle4);
+  s1[i]=angle1; 
+  s2[i]=angle2;
+  s3[i]=angle3;
+  s4[i]=angle4;
+  i++; j=i;
+  delay(250);}
+}
+
+void Execute_sequence()
+{
+  Serial.println("executing");
+ for(k=0;k<=j;k++)
+ {
+   mot1.write(s1[k]);
+   mot2.write(s2[k]);
+   mot3.write(s3[k]);
+   mot4.write(s4[k]);
+   delay(100);
+ }
+}
+
+  
+  

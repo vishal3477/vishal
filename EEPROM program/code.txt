@@ -1,0 +1,280 @@
+.model tiny
+.data
+	PA2	equ	0f0h;	1:kb, 7 segment
+	PB2	equ	0f2h
+	PC2	equ	0f4h
+	creg2	equ	0f6h
+
+	PA1	equ	0f8h;	2:Eprom
+	PB1	equ	0fah
+	PC1	equ	0fch
+	creg1	equ	0feh
+
+	TABLE_K	dw	1eeh,1ed,1eb,1e7,1deh,1ddh,1dbh,1d7h
+		dw	1beh,1bdh,1bbh,1b7h,17eh,17dh,17bh
+		dw	177h,0feh,0fdh,0fbh,0f7h
+	
+	TABLE_D	db	3fh,06h,5bh,4fh,66h,6dh
+		db	7dh,27h,7fh,6fh,37h,7ch
+		db	39h,5eh,79h,71h
+
+	data	db	2 dup(?)
+	
+	eprom	dw	0
+	
+.code
+.startup
+
+	mov	al,10000010b
+	out	creg1,al
+	
+	mov	al,00
+	out	PA1,al
+
+	out	PC1,al
+
+	mov	di,0ffh;		Checking values for FF
+x3:	mov	si,16
+	
+x1:	in	PB1,bl
+	cmp	bl,0ffh
+
+	je	x2
+	mov	cl,00010000b
+	out	PC1,cl
+	jmp	x90	
+
+x2:	add	al,10000b
+	out	PC1,al
+
+	dec	si
+	jnz	x1
+
+	dec	di
+	jnz	x3	
+
+	
+	mov	al,10000000b;		Re-initializing 1st 8255 with port B as output(to program eprom)
+	out	creg1,al
+	
+	mov	cl,11000000b;		Vpp = 15v, EO = 5v for programming
+	out	PC1,cl
+
+
+	mov	al,10010000b;   	initializing second 8255
+	out	creg2,al
+	
+
+
+	
+
+
+x99:		
+	mov	dx,3
+x0:	mov	al,03h
+	out	0f4h,al
+
+x1:	in	al,0f0h;		check for key release
+	and	al,0f8h
+	cmp	al,0f8h
+	jnz	x1
+	
+	call	delay_20ms;		debounce
+	
+
+	mov	al,03h;			check for key press
+	out	0f4h,al
+x2:	in	al,0f0h
+	and	al,0f8h
+	cmp	al,0f8h
+	jz	x2
+
+	call	delay_20ms
+	mov	al,03h;			check for key press
+	out	0f4h,al
+	in	al,0f0h
+	and	al,0f8h
+	cmp	al,0f8h
+	jz	x2
+
+	mov	al,0e3h;		check for kp col 1
+	mov	bl,al
+	out	04h,al
+	in	al,0f0h
+	and	al,0f8h
+	cmp	al,0f8h
+	jnz	x3
+	
+	mov	al,0d3h;		check for kp col 2
+	mov	bl,al
+	out	0f4h,al
+	in	al,0f0h
+	and	al,0f8h
+	cmp	al,0f8h
+	jnz	x3
+	
+	mov	al,0b3h;		check for kp col 3
+	mov	bl,al
+	out	0f4h,al
+	in	al,0f0h
+	and	al,0f8h
+	cmp	al,0f8h
+	jz	x3
+	
+	mov	al,73h;			check kp col 4
+	mov	bl,al
+	out	0f4h,al
+	in	al,0f0h
+	and	al,0f8h
+	cmp	al,0f8h
+	jnz	x2
+
+x3:	and	al,0f8h
+	mov	ah,al
+	and	ah,80h
+	mov	cx,7
+	ror	ah,cx
+	and	ah,01h
+	rol	al,1	
+	and	al,0f0h
+	and 	bl,0f0h
+	mov	cx,4
+	rol	bl,cx
+	and	bl,0fh
+	or	al,bl
+	
+	mov	cx,18
+	lea	si,data
+	mov	di,00h
+x4:	cmp	ax,TABLE_K[DI]
+	jz	x5
+	inc	di
+	loop	x4
+	
+	
+		
+x5:	mov	[si],di
+	inc	si
+	cmp	di,17
+	jnz	x6
+	inc	dx
+	dec	si
+
+x6:	dec	dx
+	jnz	x0
+	
+	
+
+
+
+
+
+
+
+
+	
+	mov	al,eprom
+	out	PA1,al
+	
+	mov	al,data
+	mov	ah,data[1]
+	
+	rol	ah,4
+	and	ah,0f0h
+	and	al,0fh
+	or	al,ah
+	
+	out	PB1,al
+
+	inc	eprom
+
+
+	
+
+	
+x7:	mov	al,01;			display msb
+	out	0f4h,al
+	mov	di,data
+	mov	al,TABLE_D[DI]
+	out	0f2h,al
+
+x8:	in	al,0f0h;		check for key release
+	and	al,0f8h
+	cmp	al,0f8h
+	jnz	x8
+	
+	call	delay_20ms;		debounce
+	
+
+	mov	al,03h;			check for key press
+	out	0f4h,al
+x9:	in	al,0f0h
+	and	al,0f8h
+	cmp	al,0f8h
+	jz	x9
+
+	call	delay_20ms
+	mov	al,03h;			check for key press
+	out	0f4h,al
+	in	al,0f0h
+	and	al,0f8h
+	cmp	al,0f8h
+	jz	x9
+	jnz	x12
+	
+	mov	al,02;			display lsb
+	out	0f4h,al
+	mov	di,data[1]
+	mov	al,TABLE_D[DI]
+	out	0f2h,al
+
+
+
+x10:	in	al,0f0h;		check for key release
+	and	al,0f8h
+	cmp	al,0f8h
+	jnz	x10
+	
+	call	delay_20ms;		debounce
+	
+
+	mov	al,03h;			check for key press
+	out	0f4h,al
+x11:	in	al,0f0h
+	and	al,0f8h
+	cmp	al,0f8h
+	jz	x11
+
+	call	delay_20ms
+	mov	al,03h;			check for key press
+	out	0f4h,al
+	in	al,0f0h
+	and	al,0f8h
+	cmp	al,0f8h
+	jz	x11
+	jnz	x12
+
+	
+
+	jmp	x7
+
+	
+x12:	mov	ax,eprom
+	cmp	ax,1000h
+	jnz	x99
+
+	mov	al,00100000b
+	out	PC1,al
+
+
+
+
+
+
+	
+
+
+
+x90:	
+.exit
+end

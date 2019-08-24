@@ -1,0 +1,177 @@
+#make_bin#
+
+#LOAD_SEGMENT=FFFFh#
+#LOAD_OFFSET=0000h#
+
+#CS=0000h#
+#IP=0000h#
+
+#DS=0000h#
+#ES=0000h#
+
+#SS=0000h#
+#SP=FFFEh#
+
+#AX=0000h#
+#BX=0000h#
+#CX=0000h#
+#DX=0000h#
+#SI=0000h#
+#DI=0000h#
+#BP=0000h#
+; add your code here
+jmp     st1
+db     885 dup(0)
+; kb table
+TABLE_K dw  01beh,01bdh,01bbh,01b7h,01afh
+dw  019fh,017eh,017dh,017bh,0177h
+dw  016fh,015fh,0feh,0fdh,0fbh
+dw  00f7h,00efh,00dfh
+          
+          
+TABLE_D    dw    3fh,06H,5bh,4fh,66h,6dh
+dw    7dh,27h,7fh,6fh,77h,7ch
+dw    39h,5eh,79h,71h
+
+
+st1:      cli
+; intialize ds, es,ss to start of RAM
+mov       ax,0200H
+mov       ds,ax
+mov       es,ax
+mov       ss,ax
+mov       sp,0FFFEH
+
+
+mov al,90h    ;first 8255
+out 86H,al
+
+
+mov         al,0ffh
+out         82H,al 
+
+;check for key releases
+x0: mov al,00
+out 84H,al
+
+x1:    in al,80H
+and al,00000111b
+cmp al,00000111b
+jnz x1
+call delay_20ms
+
+;check for key press
+mov al,00
+out 84H,al
+
+x2: in al,80H
+and al,00000111b
+cmp al,00000111b
+jz x2
+
+
+;check for genuine key press
+mov al,00
+out 84H,al
+in al,80H
+and al,00000111b
+cmp al,00000111b
+jz x2
+
+;key no 0 6 c
+mov al,00111110b
+mov bl,al
+out 84H,al
+in al,80H
+and al,00000111b
+cmp al,00000111b
+jnz x3
+
+;key no 1 7 d
+mov al,00111101b
+mov bl,al
+out 84H,al
+in al,80H
+and al,00000111b
+cmp al,00000111b
+jnz x3
+
+;key no 2 8 e
+mov al,00111011b
+mov bl,al
+out 84H,al
+in al,80H
+and al,00000111b
+cmp al,00000111b
+jnz x3
+
+;key no 3 9 f
+mov al,00110111b
+mov bl,al
+out 84H,al
+in al,80H
+and al,00000111b
+cmp al,00000111b
+jnz x3
+
+;key no 4 a back
+mov al,00101111b
+mov bl,al
+out 84H,al
+in al,80H
+and al,00000111b
+cmp al,00000111b
+jnz x3
+
+;key no 5 b del
+mov al,00011111b
+mov bl,al
+out 84H,al
+in al,80H
+and al,00000111b
+cmp al,00000111b
+jnz x3
+
+x3: mov ah,0
+mov Bh,0
+mov cl,6
+rol AX,6
+or ax,bx
+mov cx,18
+mov di,00
+
+
+;decode
+x4: cmp ax,CS:TABLE_K[di]
+jz x5
+add di,2
+loop x4
+
+;program port b of 1 as output
+x5:         
+lea BX,TABLE_D
+MOV AL,CS:[BX+DI]
+Not AL
+out 82H,al
+jmp x0
+
+JMP            X0
+delay_20ms:    mov              cx,2220 ; delay generated will be approx 0.45 secs
+xn:        loop          xn
+ret
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
